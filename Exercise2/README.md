@@ -10,6 +10,7 @@ I have chosen to proceed with the Python application (calculator.py). I have dow
 The requirements are listed inside of requirements.txt.
 
 QUICK NOTE: I have looked at the code of the application, and noticed it uses `flask` but it is not in `requirements.txt`, and because of that, it crashed the app when I tried to build it, so I have added it to `requirements.txt`
+Also, the folder `.github` is needed for the Automation part of this exercise, however, it needs to be placed in the root folder, instead of the folder for this exercise.
 
 ![Build Fail](Screenshots/BuildNoFlask.png)
 
@@ -126,15 +127,121 @@ How it appears after the push:
 
 # 5. Automation:
 
-##	Automate the following steps using GitHub Actions:
+For automation, I have to use GitHub Actions. To do this, I need a `.github` folder, in the root directory of my repo, which contains `workflow` folder, and inside it, an `.yml` file where the instructions themselves go.
+On the GitHub repo itself, there is a button on the top bar, called "Actions". Upon clicking on it I was greeted with a menu which had various options based on what I wanted to do, so I chose the "Docker Image" option.
 
-##	Trigger the build whenever changes are pushed to the repository on branch main/master
+![Docker Github Actions](Screenshots/GhubDockerImg.png)
 
-##	Build the Docker image using the Dockerfile
+In `docker-image.yml`, Github autocreated this code below:
 
-##	Tag the Docker image with a commit hash
+```
+name: Docker Image CI
 
-##	Push the Docker image to the Docker registry
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+```
+
+I had to pull the new folders and file created to the project on my PC, so I can then work on the file:
+
+`git pull origin main`
+
+I then headed in GitHub to Settings/Secrets and Variables/Actions, and added the following repository secrets, which will be needed later:
+
+```
+DOCKER_USERNAME - I set this to razvanspunei
+DOCKER_TOKEN - An access token I have generated and given permission to edit/write/delete
+```
+The token was generated in this menu in Docker Hub, in the account page:
+
+![Docker Token](Screenshots/DockerToken.png)
+
+After that, I have modified the `docker-image.yml` as follows:
+
+- Removed `pull_request: branches: [ "main" ` as instructions say to trigger the build when changes are pushed, not necessarily on pull
+- Added the following to login into Docker Hub, so I can access my repo and build there:
+
+```
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_TOKEN }}
+```
+
+- Using the following to extract the commit hash from git:
+
+```
+    - name: Extract commit hash
+      run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+```
+
+- This builds the Docker image, with the proper tag:
+
+```
+    - name: Build the Docker image
+      run: docker build ./Exercise2 --file ./Exercise2/Dockerfile --tag proiectinternship:${{ env.COMMIT_HASH }}
+```
+
+- This pushes the Docker Image, to the Docker registry:
+
+```
+    - name: Push to Docker Hub
+      run: docker tag proiectinternship:${{ env.COMMIT_HASH }} ${{ secrets.DOCKER_USERNAME }}/proiectinternship:${{ env.COMMIT_HASH }} &&
+           docker push ${{ secrets.DOCKER_USERNAME }}/proiectinternship:${{ env.COMMIT_HASH }}
+
+```
+
+- Upon pushing the changes to Github, the `docker-image.yml` was automatically called, and I could see next to the name a yellow circle showing that it is in progress. After a couple seconds it turned into a green checkmark, and upon checking Docker Hub, I could see that the image was successfully built and pushes:
+
+![Docker Auto](Screenshots/AutomationFunctioned.png)
+
+Full code for the `docker-image.yml` below:
+
+```
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v4
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_TOKEN }}
+
+    - name: Extract commit hash
+      run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+    - name: Build the Docker image
+      run: docker build ./Exercise2 --file ./Exercise2/Dockerfile --tag proiectinternship:${{ env.COMMIT_HASH }}
+
+    - name: Push to Docker Hub
+      run: docker tag proiectinternship:${{ env.COMMIT_HASH }} ${{ secrets.DOCKER_USERNAME }}/proiectinternship:${{ env.COMMIT_HASH }} &&
+           docker push ${{ secrets.DOCKER_USERNAME }}/proiectinternship:${{ env.COMMIT_HASH }}
+```
 
 # Bonus / Nice to have:
 
