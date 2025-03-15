@@ -247,4 +247,35 @@ jobs:
 
 ## B1. Ensure the application catches the Docker container's stop signal and performs a clean shutdown
 
+For this, the Python app would need to be modified, to include a function to catch the stop signal from Docker.\
+I have added these 3 imports, so I can access the signal, as well as the function to shut down the program, and get some logs to make sure it does shut down:
+
+```
+import signal
+import sys
+import logging
+```
+
+This function shuts down the program:
+
+```
+def shutdown(sig, frame):
+    app.logger.info("Shutting down Calculator...")
+    sys.exit(0)
+```
+
+This sets up the format for logging:
+
+```
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+)
+```
+
+And this checks for the signal, to trigger the shutdown:
+`signal.signal(signal.SIGTERM, shutdown)`
+
+![Signal](Screenshots/LoggingSignalShutdown.png)
+
 ## B2. Configure environment variables for sensitive information

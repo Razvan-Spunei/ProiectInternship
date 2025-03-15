@@ -1,5 +1,10 @@
 from flask import Flask, request, jsonify, render_template_string
 
+import signal
+import sys
+import logging
+
+
 app = Flask(__name__)
 
 HTML_TEMPLATE = """
@@ -70,6 +75,18 @@ def calculate():
         return jsonify({'error': 'Invalid operation'}), 400
         
     return jsonify({'result': result})
+    
+    
+def shutdown(sig, frame):
+    app.logger.info("Shutting down Calculator...")
+    sys.exit(0)
+    
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+)
+
+signal.signal(signal.SIGTERM, shutdown)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
