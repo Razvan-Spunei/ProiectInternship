@@ -48,7 +48,7 @@ DETAIL:  Key (employee_id)=(54) is not present in table "employees".
 
 What this tells me, is that there are more salaries then employees in the table. Upon connecting to the database (process that I have detailed in the next step) I have noticed that the database was actually populated, despite the error.
 The problem is, the Salaries table was not populated at all, so I had to come up with a fix.
-I have tried to add at the end of the `INSERT INTO salaries` block, in the script, the following line:
+I have modified the `INSERT INTO salaries` block, `in the populatedb.sql` script provided, with the following:
 
 ```
 INSERT INTO salaries (employee_id, salary)
